@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nginx
+spec:
+  destination:
+    name: ''
+    namespace: nginx
+    server: https://kubernetes.default.svc
+  source:
+    path: .
+    repoURL: https://github.com/asdfkco/Argo_NGINX.git
+    targetRevision: HEAD
+  sources: []
+  project: default
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      prune: false
+      selfHeal: false
