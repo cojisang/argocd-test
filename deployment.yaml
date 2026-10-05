@@ -2,18 +2,27 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx
+  namespace: nginx
+
 spec:
-  replicas: 1
+  replicas: 2
+
   selector:
     matchLabels:
       app: nginx
+
   template:
     metadata:
       labels:
         app: nginx
+
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: rocky-worker
+
       containers:
         - name: nginx
           image: nginx:latest
+
           ports:
             - containerPort: 80
