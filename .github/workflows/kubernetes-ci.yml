@@ -1,0 +1,71 @@
+name: Kubernetes Manifest CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Validate Kubernetes Manifests
+
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Check kubectl
+        run: |
+          kubectl version --client
+
+      - name: Validate Kubernetes Manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "=========================================="
+          echo " Kubernetes Manifest Validation"
+          echo "=========================================="
+
+          FOUND=0
+
+          while IFS= read -r -d '' file; do
+            FOUND=1
+
+            echo ""
+            echo "[VALIDATE] $file"
+
+            kubectl apply \
+              --dry-run=client \
+              --validate=false \
+              -f "$file" > /dev/null
+
+            echo "[PASS] $file"
+
+          done < <(
+            find . \
+              -type f \
+              \( -name "*.yaml" -o -name "*.yml" \) \
+              ! -path "./.github/*" \
+              ! -path "./.git/*" \
+              -print0
+          )
+
+          if [ "$FOUND" -eq 0 ]; then
+            echo "No Kubernetes manifest files found."
+            exit 1
+          fi
+
+      - name: CI Result
+        run: |
+          echo "=========================================="
+          echo " Kubernetes Manifest Validation SUCCESS"
+          echo "=========================================="
