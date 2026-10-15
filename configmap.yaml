@@ -3,6 +3,8 @@ kind: ConfigMap
 metadata:
   name: nginx-config
   namespace: nginx
+  annotations:
+    ci-cd-test: "validated-by-github-actions"
 
 data:
   default.conf: |
