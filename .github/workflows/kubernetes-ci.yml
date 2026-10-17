@@ -1,4 +1,4 @@
-name: Kubernetes Manifest CI
+name: Kubernetes DevSecOps CI
 
 on:
   pull_request:
@@ -7,65 +7,62 @@ on:
 
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   validate:
-    name: Validate Kubernetes Manifests
-
-    runs-on:
-      - self-hosted
-      - Linux
-      - X64
-
-    timeout-minutes: 5
+    name: Validate Manifests and Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
+      # 1. GitHub 저장소 체크아웃
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Check kubectl
-        run: |
-          kubectl version --client
+      # 2. Go 환경 구성
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: false
 
+      # 3. Kubeconform 설치
+      - name: Install Kubeconform
+        run: |
+          go install github.com/yannh/kubeconform/cmd/kubeconform@v0.4.13
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      # 4. Kubernetes Manifest 검증
       - name: Validate Kubernetes Manifests
-        shell: bash
         run: |
           set -euo pipefail
 
-          echo "=========================================="
-          echo " Kubernetes Manifest Validation"
-          echo "=========================================="
+          kubeconform \
+            -strict \
+            -summary \
+            -kubernetes-version 1.36.0 \
+            configmap.yaml \
+            deployment.yaml \
+            namespace.yaml \
+            service.yaml \
+            wordpress/
 
-          FOUND=0
+      # 5. Trivy 보안 설정 검사
+      - name: Trivy Security Scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: 'config'
+          scan-ref: '.'
+          format: 'table'
+          severity: 'HIGH,CRITICAL'
+          exit-code: '0'
 
-          while IFS= read -r -d '' file; do
-            FOUND=1
-
-            echo ""
-            echo "[VALIDATE] $file"
-
-            kubectl apply \
-              --dry-run=client \
-              --validate=false \
-              -f "$file" > /dev/null
-
-            echo "[PASS] $file"
-
-          done < <(
-            find . \
-              -type f \
-              \( -name "*.yaml" -o -name "*.yml" \) \
-              ! -path "./.github/*" \
-              ! -path "./.git/*" \
-              -print0
-          )
-
-          if [ "$FOUND" -eq 0 ]; then
-            echo "No Kubernetes manifest files found."
-            exit 1
-          fi
-
+      # 6. 검증 결과
       - name: CI Result
         run: |
-          echo "=========================================="
-          echo " Kubernetes Manifest Validation SUCCESS"
-          echo "=========================================="
+          echo "===================================="
+          echo " Kubernetes Manifest Validation OK"
+          echo " Security Baseline Scan Completed"
+          echo "===================================="
