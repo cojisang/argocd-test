@@ -1,3 +1,4 @@
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,6 +7,9 @@ metadata:
 
 spec:
   replicas: 1
+
+  strategy:
+    type: Recreate
 
   selector:
     matchLabels:
@@ -20,9 +24,28 @@ spec:
       nodeSelector:
         kubernetes.io/hostname: rocky-worker
 
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+
       containers:
         - name: wordpress
           image: wordpress:latest
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+
+          command:
+            - /bin/sh
+            - -ec
+
+          args:
+            - >-
+              chmod 1777 /tmp &&
+              chown 0:33 /run/apache2 /run/lock/apache2 &&
+              chmod 0775 /run/apache2 /run/lock/apache2 &&
+              exec /usr/local/bin/docker-entrypoint.sh apache2-foreground
 
           ports:
             - containerPort: 80
@@ -53,7 +76,25 @@ spec:
             - name: wordpress-storage
               mountPath: /var/www/html
 
+            - name: apache-run
+              mountPath: /run/apache2
+
+            - name: apache-lock
+              mountPath: /run/lock/apache2
+
+            - name: wordpress-tmp
+              mountPath: /tmp
+
       volumes:
         - name: wordpress-storage
           persistentVolumeClaim:
             claimName: wordpress-pvc
+
+        - name: apache-run
+          emptyDir: {}
+
+        - name: apache-lock
+          emptyDir: {}
+
+        - name: wordpress-tmp
+          emptyDir: {}
