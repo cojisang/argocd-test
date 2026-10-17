@@ -20,9 +20,17 @@ spec:
       nodeSelector:
         kubernetes.io/hostname: rocky-worker
 
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+
       containers:
         - name: nginx
           image: nginx:latest
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
 
           ports:
             - containerPort: 80
@@ -32,7 +40,25 @@ spec:
               mountPath: /etc/nginx/conf.d/default.conf
               subPath: default.conf
 
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+
+            - name: nginx-run
+              mountPath: /var/run
+
+            - name: nginx-tmp
+              mountPath: /tmp
+
       volumes:
         - name: nginx-config
           configMap:
             name: nginx-config
+
+        - name: nginx-cache
+          emptyDir: {}
+
+        - name: nginx-run
+          emptyDir: {}
+
+        - name: nginx-tmp
+          emptyDir: {}
