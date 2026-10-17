@@ -1,3 +1,4 @@
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,6 +7,9 @@ metadata:
 
 spec:
   replicas: 1
+
+  strategy:
+    type: Recreate
 
   selector:
     matchLabels:
@@ -20,9 +24,17 @@ spec:
       nodeSelector:
         kubernetes.io/hostname: rocky-worker
 
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+
       containers:
         - name: mariadb
           image: mariadb:11.4
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
 
           ports:
             - containerPort: 3306
@@ -56,6 +68,12 @@ spec:
             - name: mariadb-storage
               mountPath: /var/lib/mysql
 
+            - name: mariadb-run
+              mountPath: /run/mysqld
+
+            - name: mariadb-tmp
+              mountPath: /tmp
+
           readinessProbe:
             exec:
               command:
@@ -69,3 +87,9 @@ spec:
         - name: mariadb-storage
           persistentVolumeClaim:
             claimName: mariadb-pvc
+
+        - name: mariadb-run
+          emptyDir: {}
+
+        - name: mariadb-tmp
+          emptyDir: {}
