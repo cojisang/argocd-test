@@ -1,0 +1,8 @@
+# Local Kubernetes secrets
+wordpress/mariadb-secret.yaml
+*.local.secret.yaml
+
+# Environment files
+.env
+.env.*
+!.env.example
