@@ -58,26 +58,6 @@ argocd-test/
 
 `service.yaml`에는 NGINX NodePort `30080`이 설정되어 있으며, `configmap.yaml`에는 WordPress Service를 향한 Reverse Proxy 설정이 있습니다.
 
-## 5. 검증 및 장애 복구 사례
-
-### Trivy 보안 설정 검사
-
-Kubernetes Manifest를 검사했을 때 보안 설정 관련 문제 9건을 확인했습니다. 설정을 수정한 뒤 같은 검사를 다시 실행해 0건으로 줄어든 것을 확인했습니다.
-
-### 이미지 태그 오류로 인한 배포 실패
-
-1. CI 검사는 통과했지만 존재하지 않는 컨테이너 이미지 태그로 인해 Pod가 `ErrImagePull` / `ImagePullBackOff` 상태가 되었습니다.
-2. Pod 이벤트와 Deployment의 이미지 태그를 확인해 원인을 찾았습니다.
-3. GitHub에서 변경 사항을 Revert하고 Argo CD로 다시 동기화했습니다.
-4. 정상 이미지가 적용되고 Rollout이 완료된 것을 확인했습니다.
-
-## 6. 현재 구성의 한계와 개선할 점
-
-- 현재 CI는 Manifest의 스키마 및 보안 설정을 검사하지만 **컨테이너 이미지 태그가 레지스트리에 실제 존재하는지까지는 검증하지 않습니다.**
-- 검증한 컨테이너 이미지의 태그 또는 digest를 고정해 배포의 재현성을 높일 필요가 있습니다.
-- 실제 배포 후 상태를 자동 확인하는 검사와 장애 발생 시 대응 절차를 추가로 개선할 수 있습니다.
-
-
 ## Trivy 보안 설정 검사 및 개선 결과
 Trivy 검사에서 NGINX, MariaDB, WordPress Deployment에 각각 3건씩 총 9건의 보안 설정 문제(Misconfiguration)가 발견되었습니다.
 
