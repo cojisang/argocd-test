@@ -184,3 +184,65 @@ Longhorn StorageClass `longhorn-single`과 `rocky-worker` 노드 이름도 실�
 `.gitignore`는 앞으로 로컬 Secret 파일이 실수로 추가되는 것을 줄이지만, **과거 커밋의 인증정보를 삭제하지는 않습니다.**
 
 초기 실습용 값은 사용을 종료했으며 재사용하지 않는 전제에서 기록을 보존하고 있습니다.
+## Argo CD 및 서비스 정상 동작 검증
+
+### 1. Argo CD 동기화 확인
+
+| Application | Sync Status | Health Status |
+|---|---|---|
+| nginx | Synced | Healthy |
+| wordpress-stack | Synced | Healthy |
+
+### 2. Kubernetes 리소스 확인
+
+- Control Plane / Worker Node: Ready
+- NGINX Pod 2개: Running / Ready
+- WordPress 및 MariaDB Pod: Running / Ready
+- Kubernetes Service 및 NodePort 30080 확인
+
+### 3. HTTP 응답 검증
+
+NGINX NodePort를 통해 WordPress의 HTTP 응답을
+확인했습니다.
+
+```bash
+curl -I http://192.168.94.131:30080
+```
+
+**검증 결과: HTTP/1.1 200 OK**
+
+![HTTP 응답 확인](docs/images/http-200.png)
+
+### 4. WordPress REST API 검증
+
+WordPress REST API를 호출하여 실제 게시글이
+정상적으로 조회되는지 확인했습니다.
+
+```bash
+curl -sS -o /tmp/wp-posts.json \
+  -w 'HTTP Status: %{http_code}\n' \
+  'http://192.168.94.131:30080/wp-json/wp/v2/posts?per_page=1'
+```
+
+**검증 결과**
+
+- HTTP Status: 200
+- JSON 형식의 게시글 데이터 반환
+- 게시글 ID: 20
+- 게시글 제목: log test
+- 게시글 상태: publish
+
+![WordPress API 조회](docs/images/wordpress-api-200.png)
+
+### 5. 검증 결과 정리
+
+Argo CD의 Synced/Healthy 상태와 Kubernetes Pod의
+Running 상태를 확인했습니다.
+
+이후 NGINX NodePort를 통한 HTTP 요청과
+WordPress REST API 게시글 조회까지 성공하여
+현재 배포된 서비스의 정상 동작을 확인했습니다.
+
+이 검증은 현재 클러스터의 동작 확인이며,
+과거 Git Revert 직후의 동기화 시점을
+증명하는 자료와는 구분됩니다.
