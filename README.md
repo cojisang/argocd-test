@@ -88,9 +88,9 @@ GitHub Actions에서 Trivy를 이용해 Kubernetes Manifest 보안 설정을 검
 
 | 검사 대상 | 수정 전 | 수정 후 |
 |---|---:|---:|
-| `deployment.yaml` | 3건 | 0건 |
-| `wordpress/mariadb-deployment.yaml` | 3건 | 0건 |
-| `wordpress/wordpress-deployment.yaml` | 3건 | 0건 |
+| `deployment.yaml` | 3건 | 0건 |[커밋](https://github.com/cojisang/argocd-test/commit/f7dc2f2)
+| `wordpress/mariadb-deployment.yaml` | 3건 | 0건 | [커밋](https://github.com/cojisang/argocd-test/commit/ec7d403)
+| `wordpress/wordpress-deployment.yaml` | 3건 | 0건 |[커밋](https://github.com/cojisang/argocd-test/commit/415ad68)
 | **총 탐지 건수** | **9건** | **0건** |
 
 - 검사 도구: Trivy (Configuration Scan)
