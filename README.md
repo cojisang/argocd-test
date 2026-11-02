@@ -141,3 +141,82 @@ MariaDB의 `/var/lib/mysql` 데이터 저장 경로는 기존 PVC 연결을 유�
 [Trivy 검사 성공 로그 확인](https://github.com/cojisang/argocd-test/actions/runs/39034712811/job/117402111548)
 
 ![Trivy 검사 성공](docs/images/trivy-after.png)
+
+## ImagePullBackOff 장애 재현 및 GitOps 복구
+
+### 1. 테스트 목적
+
+GitHub Actions의 Kubernetes Manifest 검증과
+Trivy 보안 설정 검사를 통과하더라도 실제
+Kubernetes 배포 과정에서 오류가 발생할 수
+있는지 확인하기 위해 장애를 재현했습니다.
+
+### 2. 이미지 태그 변경 — PR #5
+
+NGINX Deployment의 이미지 태그를
+존재하지 않는 테스트용 태그로 변경했습니다.
+
+**변경 전**
+`nginx:latest`
+
+**변경 후**
+`nginx:devsecops-rollback-test-invalid-20261017`
+
+**코드 변경 증빙**
+- [PR #5 - 장애 재현](https://github.com/cojisang/argocd-test/pull/5/files)
+- [장애 재현 커밋](https://github.com/cojisang/argocd-test/commit/151bca4)
+
+### 3. ImagePullBackOff 발생 및 원인 확인
+
+CI 검사 이후 Kubernetes에서 잘못된 이미지
+태그를 가져오지 못하는 문제가 발생했습니다.
+
+Pod 이벤트에서 다음 오류를 확인했습니다.
+
+- `Failed to pull image`
+- `not found`
+- `ErrImagePull`
+- `ImagePullBackOff`
+
+Deployment에 설정된 이미지 태그가
+레지스트리에 존재하지 않는 것이 원인이었습니다.
+
+**실제 장애 발생 화면**
+
+![ImagePullBackOff 발생](docs/images/imagepullbackoff.png)
+
+### 4. Git Revert를 통한 설정 복구 — PR #6
+
+Git Revert를 이용해 잘못된 이미지 태그를
+기존 태그로 되돌렸습니다.
+
+**변경 전**
+`nginx:devsecops-rollback-test-invalid-20261017`
+
+**복구 후**
+`nginx:latest`
+
+**코드 변경 증빙**
+- [PR #6 - Git Revert](https://github.com/cojisang/argocd-test/pull/6/files)
+- [Git Revert 커밋](https://github.com/cojisang/argocd-test/commit/60d6387)
+
+### 5. Pod 상태 확인
+
+NGINX Pod 상태를 확인한 화면에서는
+Pod 2개가 `1/1 Running`, `RESTARTS 0`으로
+표시되었습니다.
+
+**NGINX Pod Running 확인 화면**
+
+![NGINX Pod Running](docs/images/nginx-running.png)
+
+### 6. 검증 결과
+
+| 검증 항목 | 결과 |
+|---|---|
+| 잘못된 이미지 태그 적용 | PR #5에서 확인 |
+| 이미지 다운로드 실패 | ErrImagePull 확인 |
+| ImagePullBackOff | Pod 이벤트에서 확인 |
+| Git Revert | PR #6에서 확인 |
+| 이미지 태그 원복 | nginx:latest 확인 |
+| 정상 상태 Pod | Running 2개 확인 |
