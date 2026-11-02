@@ -100,14 +100,14 @@ GitHub Actions에서 Trivy를 이용해 Kubernetes Manifest 보안 설정을 검
 
 ### 2. GitHub Actions 실행 증빙
 
-**수정 전 — Trivy 검사 실패**
+**수정 전 — 보안 설정 문제 9건**
 
-[Trivy Security Scan 실패 로그 확인](https://github.com/cojisang/argocd-test/actions/runs/39029021458/job/117385575201)
+![Trivy 검사 실패](docs/images/trivy-before.png)
 
-`Run Trivy` 단계에서 Misconfiguration 9건이 탐지되었으며, 해당 검사 단계가 실패했습니다.
+[실패 실행 로그](https://github.com/cojisang/argocd-test/actions/runs/39029021458/job/117385575201)
 
-**수정 후 — Trivy 검사 성공**
+**수정 후 — 보안 설정 문제 0건**
 
-[Trivy Security Scan 성공 로그 확인](https://github.com/cojisang/argocd-test/actions/runs/39034712811/job/117402111548)
+![Trivy 검사 성공](docs/images/trivy-after.png)
 
-동일한 12개 설정 파일을 검사한 결과 Misconfiguration 0건이 확인되었고, 검사 작업이 정상적으로 완료되었습니다.
+[성공 실행 로그](https://github.com/cojisang/argocd-test/actions/runs/39034712811/job/117402111548)
