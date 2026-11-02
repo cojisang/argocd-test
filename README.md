@@ -77,4 +77,37 @@ Kubernetes Manifest를 검사했을 때 보안 설정 관련 문제 9건을 확�
 - 검증한 컨테이너 이미지의 태그 또는 digest를 고정해 배포의 재현성을 높일 필요가 있습니다.
 - 실제 배포 후 상태를 자동 확인하는 검사와 장애 발생 시 대응 절차를 추가로 개선할 수 있습니다.
 
-이 저장소는 **Kubernetes Manifest, CI 검사, GitOps 배포 흐름**에 대한 자료입니다. Ansible, Prometheus, Loki, Longhorn, Velero, MinIO 등 다른 인프라 구성 전체의 코드를 포함한 저장소는 아닙니다.
+
+## Trivy 보안 설정 검사 및 개선 결과
+
+GitHub Actions에서 Trivy를 이용해 Kubernetes Manifest 보안 설정을 검사했습니다.
+
+최초 검사에서 3개 Deployment 파일에 총 9건의 Misconfiguration이 발견되어 CI가 실패했습니다. 이후 해당 Manifest의 보안 설정을 수정하고 동일한 검사 대상으로 재검사를 진행한 결과, 탐지 건수가 0건으로 줄어들고 CI가 정상적으로 완료되었습니다.
+
+### 1. 검사 결과 비교
+
+| 검사 대상 | 수정 전 | 수정 후 |
+|---|---:|---:|
+| `deployment.yaml` | 3건 | 0건 |
+| `wordpress/mariadb-deployment.yaml` | 3건 | 0건 |
+| `wordpress/wordpress-deployment.yaml` | 3건 | 0건 |
+| **총 탐지 건수** | **9건** | **0건** |
+
+- 검사 도구: Trivy (Configuration Scan)
+- 검사 명령: `trivy config .`
+- 검사 대상: Kubernetes 설정 파일 12개
+- 검증 일자: 2026년 10월 17일
+
+### 2. GitHub Actions 실행 증빙
+
+**수정 전 — Trivy 검사 실패**
+
+[Trivy Security Scan 실패 로그 확인](https://github.com/cojisang/argocd-test/actions/runs/39029021458/job/117385575201)
+
+`Run Trivy` 단계에서 Misconfiguration 9건이 탐지되었으며, 해당 검사 단계가 실패했습니다.
+
+**수정 후 — Trivy 검사 성공**
+
+[Trivy Security Scan 성공 로그 확인](https://github.com/cojisang/argocd-test/actions/runs/39034712811/job/117402111548)
+
+동일한 12개 설정 파일을 검사한 결과 Misconfiguration 0건이 확인되었고, 검사 작업이 정상적으로 완료되었습니다.
