@@ -233,7 +233,7 @@ Kubernetes Secret을 통해 관리하도록 구성했습니다.
 현재 저장소에는 실제 인증정보 대신
 예제 파일만 포함하고 있습니다.
 
-- [MariaDB Secret 예제](docs/examples/mariadb-secret.example.yaml)
+- [MariaDB Secret 예제](docs/example/mariadb-secret.example.yaml)
 
 실습 환경을 다시 구성할 경우 실제 Secret은
 Git 저장소 외부에서 별도로 생성해야 합니다.
