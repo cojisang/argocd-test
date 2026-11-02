@@ -79,35 +79,65 @@ Kubernetes Manifest를 검사했을 때 보안 설정 관련 문제 9건을 확�
 
 
 ## Trivy 보안 설정 검사 및 개선 결과
+Trivy 검사에서 NGINX, MariaDB, WordPress Deployment에 각각 3건씩 총 9건의 보안 설정 문제(Misconfiguration)가 발견되었습니다.
 
-GitHub Actions에서 Trivy를 이용해 Kubernetes Manifest 보안 설정을 검사했습니다.
+각 Deployment에 seccomp 프로파일을 적용하고, 권한 상승을 제한했으며, 컨테이너의 루트 파일시스템을 읽기 전용으로 설정했습니다.
 
-최초 검사에서 3개 Deployment 파일에 총 9건의 Misconfiguration이 발견되어 CI가 실패했습니다. 이후 해당 Manifest의 보안 설정을 수정하고 동일한 검사 대상으로 재검사를 진행한 결과, 탐지 건수가 0건으로 줄어들고 CI가 정상적으로 완료되었습니다.
+읽기 전용 파일시스템 적용으로 서비스 실행에 필요한 경로에 쓰기 문제가 발생하지 않도록 별도의 `emptyDir` 볼륨을 구성했습니다.
 
-### 1. 검사 결과 비교
+#### 1. 서비스별 보안 설정 변경
+
+| 서비스 | 주요 변경 사항 | 코드 변경 내역 |
+|---|---|---|
+| NGINX | seccomp 적용, 권한 상승 차단, 루트 파일시스템 읽기 전용, 임시 볼륨 추가 | [커밋 f7dc2f2](https://github.com/cojisang/argocd-test/commit/f7dc2f2) |
+| MariaDB | seccomp 적용, 권한 상승 차단, 루트 파일시스템 읽기 전용, 실행·임시 디렉터리 분리, Recreate 전략 | [커밋 ec7d403](https://github.com/cojisang/argocd-test/commit/ec7d403) |
+| WordPress | seccomp 적용, 권한 상승 차단, 루트 파일시스템 읽기 전용, Apache 실행 경로 및 권한 설정, Recreate 전략 | [커밋 415ad68](https://github.com/cojisang/argocd-test/commit/415ad68) |
+
+#### 2. 주요 보안 설정
+
+**seccompProfile: RuntimeDefault**
+- 컨테이너에서 사용할 수 있는 시스템 콜을 제한하도록 기본 seccomp 프로파일 적용
+
+**allowPrivilegeEscalation: false**
+- 컨테이너 프로세스의 추가 권한 상승 제한
+
+**readOnlyRootFilesystem: true**
+- 컨테이너 루트 파일시스템을 읽기 전용으로 설정
+- 서비스 실행에 필요한 쓰기 경로는 별도의 볼륨으로 분리
+
+**emptyDir 볼륨**
+- NGINX: `/var/cache/nginx`, `/var/run`, `/tmp`
+- MariaDB: `/run/mysqld`, `/tmp`
+- WordPress: Apache 실행 디렉터리 및 `/tmp`
+
+MariaDB의 `/var/lib/mysql` 데이터 저장 경로는 기존 PVC 연결을 유지했습니다.
+
+※ MariaDB와 WordPress에 추가한 `Recreate`는 보안 설정이 아닌 Deployment 배포 전략입니다.
+
+#### 3. Trivy 검사 결과
 
 | 검사 대상 | 수정 전 | 수정 후 |
 |---|---:|---:|
-| `deployment.yaml` | 3건 | 0건 |[커밋](https://github.com/cojisang/argocd-test/commit/f7dc2f2)
-| `wordpress/mariadb-deployment.yaml` | 3건 | 0건 | [커밋](https://github.com/cojisang/argocd-test/commit/ec7d403)
-| `wordpress/wordpress-deployment.yaml` | 3건 | 0건 |[커밋](https://github.com/cojisang/argocd-test/commit/415ad68)
-| **총 탐지 건수** | **9건** | **0건** |
+| `deployment.yaml` | 3건 | 0건 |
+| `wordpress/mariadb-deployment.yaml` | 3건 | 0건 |
+| `wordpress/wordpress-deployment.yaml` | 3건 | 0건 |
+| **합계** | **9건** | **0건** |
 
-- 검사 도구: Trivy (Configuration Scan)
+- 검사 도구: Trivy Configuration Scan
 - 검사 명령: `trivy config .`
 - 검사 대상: Kubernetes 설정 파일 12개
 - 검증 일자: 2026년 10월 17일
 
-### 2. GitHub Actions 실행 증빙
+#### 4. GitHub Actions 실행 증빙
 
-**수정 전 — 보안 설정 문제 9건**
+**수정 전 — Trivy 검사 실패 (9건)**
+
+[Trivy 검사 실패 로그 확인](https://github.com/cojisang/argocd-test/actions/runs/39029021458/job/117385575201)
 
 ![Trivy 검사 실패](docs/images/trivy-before.png)
 
-[실패 실행 로그](https://github.com/cojisang/argocd-test/actions/runs/39029021458/job/117385575201)
+**수정 후 — Trivy 검사 성공 (0건)**
 
-**수정 후 — 보안 설정 문제 0건**
+[Trivy 검사 성공 로그 확인](https://github.com/cojisang/argocd-test/actions/runs/39034712811/job/117402111548)
 
 ![Trivy 검사 성공](docs/images/trivy-after.png)
-
-[성공 실행 로그](https://github.com/cojisang/argocd-test/actions/runs/39034712811/job/117402111548)
