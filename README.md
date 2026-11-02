@@ -220,3 +220,23 @@ Pod 2개가 `1/1 Running`, `RESTARTS 0`으로
 | Git Revert | PR #6에서 확인 |
 | 이미지 태그 원복 | nginx:latest 확인 |
 | 정상 상태 Pod | Running 2개 확인 |
+
+## Secret 관리
+
+MariaDB와 WordPress 연결에 필요한 인증정보는
+Kubernetes Secret을 통해 관리하도록 구성했습니다.
+
+초기 실습에서는 Secret Manifest에 인증정보를
+직접 작성했으나, 공개 저장소에 인증정보가
+포함되지 않도록 해당 파일을 제거했습니다.
+
+현재 저장소에는 실제 인증정보 대신
+예제 파일만 포함하고 있습니다.
+
+- [MariaDB Secret 예제](docs/examples/mariadb-secret.example.yaml)
+
+실습 환경을 다시 구성할 경우 실제 Secret은
+Git 저장소 외부에서 별도로 생성해야 합니다.
+
+이 저장소의 예제 파일은 구성 참고용이며,
+실제 인증정보를 포함하지 않습니다.
